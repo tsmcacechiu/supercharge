@@ -1,0 +1,689 @@
+<title>充電站監控台</title>
+<style>
+  :root {
+    --paper: #F3F6F5;
+    --surface: #FFFFFF;
+    --surface-2: #E9EFEE;
+    --line: #D6E0DE;
+    --ink: #12201E;
+    --ink-muted: #4B615D;
+    --accent: #0E9C8B;
+    --accent-strong: #086B5F;
+    --accent-soft: rgba(14, 156, 139, 0.12);
+    --status-ok: #2F9E44;
+    --status-active: #C9750A;
+    --status-reserved: #5B67CB;
+    --status-fault: #D64545;
+    --status-offline: #7A8A87;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Sans TC", "Microsoft JhengHei", "Helvetica Neue", Arial, sans-serif;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper: #0B1614;
+      --surface: #12211E;
+      --surface-2: #172925;
+      --line: #223733;
+      --ink: #E7F1EE;
+      --ink-muted: #9FB3AE;
+      --accent: #2FD9BE;
+      --accent-strong: #5EEAD4;
+      --accent-soft: rgba(47, 217, 190, 0.16);
+      --status-ok: #57C767;
+      --status-active: #F5A623;
+      --status-reserved: #8B95F0;
+      --status-fault: #FF6B6B;
+      --status-offline: #93A3A0;
+    }
+  }
+  :root[data-theme="dark"] {
+    --paper: #0B1614;
+    --surface: #12211E;
+    --surface-2: #172925;
+    --line: #223733;
+    --ink: #E7F1EE;
+    --ink-muted: #9FB3AE;
+    --accent: #2FD9BE;
+    --accent-strong: #5EEAD4;
+    --accent-soft: rgba(47, 217, 190, 0.16);
+    --status-ok: #57C767;
+    --status-active: #F5A623;
+    --status-reserved: #8B95F0;
+    --status-fault: #FF6B6B;
+    --status-offline: #93A3A0;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.7;
+    font-size: 16px;
+  }
+
+  ::selection { background: var(--accent-soft); color: var(--ink); }
+
+  a { color: var(--accent-strong); }
+  a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+  main {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: clamp(1.5rem, 4vw, 3rem) clamp(1.25rem, 5vw, 1.5rem) 6rem;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(3.25rem, 6vw, 4.5rem);
+  }
+
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    font-weight: 600;
+    margin: 0 0 0.6rem;
+  }
+
+  h1, h2, h3 { text-wrap: balance; margin: 0; font-weight: 800; }
+  h1 { font-size: clamp(1.9rem, 4.2vw, 2.6rem); letter-spacing: -0.015em; }
+  h2 { font-size: clamp(1.35rem, 2.6vw, 1.6rem); letter-spacing: -0.01em; }
+  h3 { font-size: 1.05rem; font-weight: 700; }
+
+  p { margin: 0; }
+  .lede { color: var(--ink-muted); font-size: 1.05rem; max-width: 62ch; }
+
+  section { display: flex; flex-direction: column; gap: 1.5rem; }
+  .section-head { display: flex; flex-direction: column; gap: 0.6rem; max-width: 68ch; }
+  .section-head p { color: var(--ink-muted); }
+
+  /* ---------- hero ---------- */
+  .hero {
+    padding-top: 0.5rem;
+    border-top: 3px solid var(--accent);
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+  }
+  .hero-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.3rem;
+  }
+  .badge {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    border: 1px solid var(--line);
+  }
+
+  /* ---------- source cards ---------- */
+  .source-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.4rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .card .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 6px;
+    width: fit-content;
+  }
+  .card .url {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--ink-muted);
+    word-break: break-all;
+  }
+  .card p.desc { color: var(--ink-muted); font-size: 0.95rem; }
+  .relation-note {
+    border-left: 3px solid var(--accent);
+    padding: 0.9rem 1.1rem;
+    background: var(--surface-2);
+    border-radius: 0 10px 10px 0;
+    font-size: 0.95rem;
+    color: var(--ink-muted);
+  }
+  .relation-note b { color: var(--ink); }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 560px; }
+  thead th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-muted);
+    padding: 0.75rem 1rem;
+    border-bottom: 2px solid var(--line);
+    background: var(--surface-2);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line);
+    vertical-align: top;
+    background: var(--surface);
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  td.field { font-family: var(--mono); color: var(--accent-strong); white-space: nowrap; font-size: 0.85rem; }
+  td.example { font-family: var(--mono); color: var(--ink-muted); font-size: 0.82rem; white-space: nowrap; }
+  td.meaning { color: var(--ink); }
+
+  .table-title { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-muted); margin-bottom: -0.6rem; }
+
+  /* ---------- status legend ---------- */
+  .legend { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.35rem 0.7rem 0.35rem 0.55rem;
+    border-radius: 999px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    font-family: var(--mono);
+    font-size: 0.8rem;
+    color: var(--ink);
+  }
+  .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex-shrink: 0; }
+  .dot.ok { background: var(--status-ok); }
+  .dot.active { background: var(--status-active); }
+  .dot.reserved { background: var(--status-reserved); }
+  .dot.fault { background: var(--status-fault); }
+  .dot.offline { background: var(--status-offline); }
+
+  /* ---------- formula blocks ---------- */
+  .formula-block {
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 1.1rem 1.3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .formula-block .flabel { font-size: 0.78rem; color: var(--ink-muted); }
+  .formula-block code {
+    font-family: var(--mono);
+    font-size: 0.88rem;
+    color: var(--ink);
+    display: block;
+    overflow-x: auto;
+  }
+
+  .step-list { display: flex; flex-direction: column; gap: 0.9rem; counter-reset: step; }
+  .step {
+    display: grid;
+    grid-template-columns: 1.9rem 1fr;
+    gap: 0.8rem;
+    align-items: start;
+  }
+  .step .num {
+    counter-increment: step;
+    width: 1.9rem; height: 1.9rem;
+    border-radius: 50%;
+    background: var(--accent);
+    color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .step .body { color: var(--ink-muted); font-size: 0.95rem; }
+  .step .body b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- diagrams ---------- */
+  figure { margin: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+  .diagram-wrap {
+    overflow-x: auto;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.25rem;
+  }
+  .diagram-wrap svg { display: block; width: 100%; height: auto; min-width: 620px; }
+  figcaption { font-size: 0.85rem; color: var(--ink-muted); }
+
+  .node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .node.ok rect { stroke: var(--status-ok); }
+  .node.active rect { stroke: var(--status-active); }
+  .node.fault rect { stroke: var(--status-fault); }
+  .node.offline rect { stroke: var(--status-offline); }
+  .node.neutral rect { stroke: var(--line); }
+  .node text { fill: var(--ink); font-family: var(--sans); }
+  .node .sub { fill: var(--ink-muted); }
+  .edge { stroke: var(--ink-muted); stroke-width: 1.6; fill: none; }
+  .edge.dashed { stroke-dasharray: 6 4; }
+  .edge.dotted { stroke-dasharray: 1.6 4.5; stroke-linecap: round; }
+  .edge-label { fill: var(--ink-muted); font-family: var(--mono); }
+  .edge-label-bg { fill: var(--surface); opacity: 0.92; }
+  .pipe-node rect { fill: var(--surface); stroke: var(--line); stroke-width: 1.5; }
+  .pipe-node.source rect { stroke: var(--accent); }
+  .pipe-node.store rect { stroke-dasharray: 4 3; }
+  .pipe-node text { fill: var(--ink); font-family: var(--sans); }
+  .pipe-node .sub { fill: var(--ink-muted); font-family: var(--mono); }
+
+  /* ---------- enhancement cards ---------- */
+  .enh-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+  }
+  .enh-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.3rem 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .enh-card .tag {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    color: var(--accent-strong);
+    text-transform: uppercase;
+  }
+  .enh-card p { color: var(--ink-muted); font-size: 0.92rem; }
+
+  .bonus {
+    border-left: 3px solid var(--line);
+    padding: 0.9rem 1.1rem;
+    font-size: 0.92rem;
+    color: var(--ink-muted);
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .bonus b { color: var(--ink); }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--line);
+    padding-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    color: var(--ink-muted);
+    font-size: 0.85rem;
+  }
+  footer ul { margin: 0; padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.35rem; }
+
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<main>
+
+  <header class="hero">
+    <p class="eyebrow">TDX 觀光充電站開放資料 · 規劃筆記</p>
+    <h1>電動車充電站監控與營運分析</h1>
+    <p class="lede">把交通部 TDX「即時狀態」與「站點基本資料」兩支 API 疊在一起，就能回答兩個最實際的營運問題：每個站每天被用了多久，又壞了多久。</p>
+    <div class="hero-meta">
+      <span class="badge">ConnectorLiveStatus/Tourism</span>
+      <span class="badge">Station/Tourism</span>
+      <span class="badge">建議輪詢頻率 1–2 分鐘</span>
+    </div>
+  </header>
+
+  <section aria-labelledby="sources-h">
+    <div class="section-head">
+      <p class="eyebrow">01 · 資料源</p>
+      <h2 id="sources-h">兩支 API，兩種時間感</h2>
+      <p>一份記錄「此刻發生什麼」，一份記錄「這個站是什麼」。前者常變、後者少變，這個區別決定了後面整套輪詢與儲存架構。</p>
+    </div>
+    <div class="source-grid">
+      <div class="card">
+        <span class="tag">動態 · 高頻</span>
+        <h3>ConnectorLiveStatus</h3>
+        <p class="url">/api/basic/v1/EV/ConnectorLiveStatus/Tourism</p>
+        <p class="desc">單一充電槍當下的快照：狀態碼、累積度數、電量百分比、最後回報時間。是計算使用時數與故障時數的最小單位。</p>
+      </div>
+      <div class="card">
+        <span class="tag">靜態 · 低頻</span>
+        <h3>Station</h3>
+        <p class="url">/api/basic/v1/EV/Station/Tourism</p>
+        <p class="desc">站點的地理位置、樁數槍數、營業時間、計費規則。用來把一堆零散的槍頭代碼，還原成「一個站」的營運畫面。</p>
+      </div>
+    </div>
+    <p class="relation-note">兩者透過 <b>StationID</b> 關聯：即時狀態是事實流，站點資料是維度表——這正是充電站管理系統最經典的「事實表 + 維度表」架構。</p>
+  </section>
+
+  <section aria-labelledby="schema-h">
+    <div class="section-head">
+      <p class="eyebrow">02 · 欄位對照</p>
+      <h2 id="schema-h">每個欄位在系統裡的角色</h2>
+      <p>不是每個欄位都同樣重要——標出哪些是關聯鍵、哪些是判斷依據，後面的邏輯才站得住腳。</p>
+    </div>
+
+    <p class="table-title">ConnectorLiveStatus（即時狀態）</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>欄位</th><th>範例值</th><th>意義與用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="field">StationID</td><td class="example">89132567-S0004</td><td class="meaning">所屬充電站編號，關聯站點資料的外鍵。</td></tr>
+          <tr><td class="field">ChargingPointID</td><td class="example">89132567-P0007</td><td class="meaning">所屬充電樁（機柱）編號，一樁可能有多槍。</td></tr>
+          <tr><td class="field">ConnectorID</td><td class="example">89132567-C0007</td><td class="meaning">充電槍唯一代碼，是追蹤使用與故障時數的最小單元。</td></tr>
+          <tr><td class="field">ConnectorType</td><td class="example">5</td><td class="meaning">槍頭規格碼（5 = CCS1 美規快充）。</td></tr>
+          <tr><td class="field">ConnectorStatus</td><td class="example">3</td><td class="meaning">狀態碼，見下方圖例；是所有使用率／故障率計算的觸發來源。</td></tr>
+          <tr><td class="field">ChargedKWH</td><td class="example">0</td><td class="meaning">當次充電累積度數（kWh），可用來估算營收。</td></tr>
+          <tr><td class="field">ChargedPercent</td><td class="example">0</td><td class="meaning">當前車輛電池充電進度（%）。</td></tr>
+          <tr><td class="field">LastUpdateTime</td><td class="example">2026-09-11T20:50:00+08:00</td><td class="meaning">設備端最後回報時間，用來判斷是否離線。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span class="chip"><span class="dot ok"></span>1 Available 可用</span>
+      <span class="chip"><span class="dot active"></span>2 Occupied 充電中</span>
+      <span class="chip"><span class="dot reserved"></span>3 Reserved 預約／維護</span>
+      <span class="chip"><span class="dot fault"></span>4 Faulted 故障</span>
+      <span class="chip"><span class="dot offline"></span>0 / 255 Unknown 離線未知</span>
+    </div>
+
+    <p class="table-title">Station（站點基本資料）</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>欄位</th><th>範例值</th><th>意義與用途</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="field">StationID</td><td class="example">89132567-S0002</td><td class="meaning">站點唯一編號（Primary Key）。</td></tr>
+          <tr><td class="field">StationName</td><td class="example">井仔腳鹽田站</td><td class="meaning">站點中英文名稱，前端展示與報表標題用。</td></tr>
+          <tr><td class="field">PositionLat / Lon</td><td class="example">23.259 / 120.109</td><td class="meaning">經緯度，用於地圖標記。</td></tr>
+          <tr><td class="field">Spaces</td><td class="example">2</td><td class="meaning">充電專用停車位總數。</td></tr>
+          <tr><td class="field">ChargingPoints</td><td class="example">2</td><td class="meaning">站內充電樁總座數。</td></tr>
+          <tr><td class="field">Connectors</td><td class="example">Type 5 ×2</td><td class="meaning">站內槍頭規格與數量統計，換算「總槍數」的依據。</td></tr>
+          <tr><td class="field">ServiceTime</td><td class="example">7*24小時</td><td class="meaning">營業時間，用來判斷故障時數是否需排除非營業時段。</td></tr>
+          <tr><td class="field">ParkingRate / ChargingRate</td><td class="example">免費 / 8元每度</td><td class="meaning">計費規則，結合 ChargedKWH 可估算營收。</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap1-h">
+    <div class="section-head">
+      <p class="eyebrow">03 · 能力一</p>
+      <h2 id="cap1-h">站點每日使用狀況</h2>
+      <p>核心只做一件事：把「狀態碼變化」轉成「一段一段的使用區間」，再依站彙總。</p>
+    </div>
+
+    <div class="step-list">
+      <div class="step"><span class="num"></span><div class="body">每 <b>1–2 分鐘</b>輪詢一次 ConnectorLiveStatus，以 ConnectorID 為主鍵記錄狀態日誌。</div></div>
+      <div class="step"><span class="num"></span><div class="body">狀態從非 2 <b>變成 2</b> 時記錄 <code style="font-family:var(--mono)">StartChargingTime</code>；從 2 <b>變回其他值</b>時記錄 <code style="font-family:var(--mono)">EndChargingTime</code>。</div></div>
+      <div class="step"><span class="num"></span><div class="body">兩者相減得到單次使用時長 <b>Δt</b>，再依 StationID 彙總成當日總使用時數。</div></div>
+    </div>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 730 300" role="img" aria-label="充電槍狀態轉換圖：可用與充電中互相轉換，任一狀態偵測到狀態碼4即進入故障，故障排除後回到可用；若逾時 30 分鐘未回報則標記為離線。">
+          <defs>
+            <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-muted)"></path>
+            </marker>
+          </defs>
+
+          <!-- nodes -->
+          <g class="node ok">
+            <rect x="20" y="30" width="170" height="60" rx="12"></rect>
+            <text x="105" y="55" text-anchor="middle" font-size="13" font-weight="700">Available</text>
+            <text x="105" y="73" text-anchor="middle" font-size="11" class="sub">狀態 1 · 空閒可用</text>
+          </g>
+          <g class="node active">
+            <rect x="550" y="30" width="150" height="60" rx="12"></rect>
+            <text x="625" y="55" text-anchor="middle" font-size="13" font-weight="700">Charging</text>
+            <text x="625" y="73" text-anchor="middle" font-size="11" class="sub">狀態 2 · 充電中</text>
+          </g>
+          <g class="node fault">
+            <rect x="305" y="190" width="150" height="60" rx="12"></rect>
+            <text x="380" y="215" text-anchor="middle" font-size="13" font-weight="700">Faulted</text>
+            <text x="380" y="233" text-anchor="middle" font-size="11" class="sub">狀態 4 · 故障</text>
+          </g>
+          <g class="node offline">
+            <rect x="520" y="190" width="170" height="60" rx="12"></rect>
+            <text x="605" y="215" text-anchor="middle" font-size="13" font-weight="700">Offline</text>
+            <text x="605" y="233" text-anchor="middle" font-size="11" class="sub">心跳逾時 · 離線未知</text>
+          </g>
+
+          <!-- A <-> B -->
+          <line class="edge" x1="190" y1="45" x2="546" y2="45" marker-end="url(#arrow)"></line>
+          <rect class="edge-label-bg" x="318" y="24" width="120" height="16" rx="3"></rect>
+          <text class="edge-label" x="378" y="36" text-anchor="middle" font-size="11">① →2 開始充電</text>
+
+          <line class="edge" x1="550" y1="75" x2="194" y2="75" marker-end="url(#arrow)"></line>
+          <rect class="edge-label-bg" x="288" y="95" width="180" height="16" rx="3"></rect>
+          <text class="edge-label" x="378" y="107" text-anchor="middle" font-size="11">② 結束充電 · 記錄 Δt</text>
+
+          <!-- to Faulted -->
+          <line class="edge dashed" x1="70" y1="90" x2="336" y2="188" marker-end="url(#arrow)"></line>
+          <line class="edge dashed" x1="590" y1="90" x2="424" y2="188" marker-end="url(#arrow)"></line>
+          <rect class="edge-label-bg" x="300" y="158" width="160" height="16" rx="3"></rect>
+          <text class="edge-label" x="380" y="170" text-anchor="middle" font-size="11">③④ 狀態 → 4 判故障</text>
+
+          <!-- Faulted -> A -->
+          <path class="edge dashed" d="M305,222 C 220,222 150,150 112,92" marker-end="url(#arrow)"></path>
+          <rect class="edge-label-bg" x="130" y="148" width="150" height="16" rx="3"></rect>
+          <text class="edge-label" x="205" y="160" text-anchor="middle" font-size="11">⑤ 維修完成 → 可用</text>
+
+          <!-- to Offline -->
+          <line class="edge dotted" x1="150" y1="90" x2="558" y2="188" marker-end="url(#arrow)"></line>
+          <line class="edge dotted" x1="650" y1="90" x2="608" y2="188" marker-end="url(#arrow)"></line>
+          <rect class="edge-label-bg" x="500" y="150" width="210" height="16" rx="3"></rect>
+          <text class="edge-label" x="605" y="162" text-anchor="middle" font-size="11">⑥⑦ 逾時 &gt;30 分未回報</text>
+        </svg>
+      </div>
+      <figcaption>圖 1 — 單一充電槍的狀態轉換：實線為正常充電循環，虛線為故障進出，點線為心跳逾時判定的離線分流。</figcaption>
+    </figure>
+
+    <div class="formula-block">
+      <span class="flabel">站點每日總使用時數</span>
+      <code>StationDailyUsageHours = Σ(站內所有槍 當日使用時數)</code>
+      <span class="flabel">設備使用率</span>
+      <code>使用率 = StationDailyUsageHours ÷ (槍數 × 24) × 100%</code>
+      <span class="flabel">每日翻轉次數（服務了多少台車）</span>
+      <code>Turnover = 當天狀態轉為 2 的事件總次數</code>
+    </div>
+  </section>
+
+  <section aria-labelledby="cap2-h">
+    <div class="section-head">
+      <p class="eyebrow">04 · 能力二</p>
+      <h2 id="cap2-h">故障時數累積（日／週／月）</h2>
+      <p>故障分析追蹤的是異常狀態的持續時間，且要把「真故障」與「斷線」分開記錄，才不會誤判維修優先順序。</p>
+    </div>
+
+    <p>建議獨立維護一張 <code style="font-family:var(--mono)">connector_fault_logs</code> 表，觸發條件有兩種：</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>觸發條件</th><th>判定依據</th><th>記錄類型</th></tr></thead>
+        <tbody>
+          <tr><td class="meaning">明確故障</td><td class="example">ConnectorStatus 變為 4</td><td class="meaning">TriggerType = fault</td></tr>
+          <tr><td class="meaning">設備離線</td><td class="example">LastUpdateTime 超過 30 分鐘未更新</td><td class="meaning">TriggerType = timeout</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="table-title">connector_fault_logs 結構</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>欄位</th><th>說明</th></tr></thead>
+        <tbody>
+          <tr><td class="field">ConnectorID / StationID</td><td class="meaning">定位是哪一槍、哪一站發生。</td></tr>
+          <tr><td class="field">FaultStartTime / FaultEndTime</td><td class="meaning">故障區間起訖；跨天需依 00:00–24:00 切分後再彙總。</td></tr>
+          <tr><td class="field">DurationMinutes</td><td class="meaning">單次故障持續分鐘數，日結時加總。</td></tr>
+          <tr><td class="field">TriggerType</td><td class="meaning">fault（狀態碼4）或 timeout（心跳逾時），分開統計。</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="formula-block">
+      <span class="flabel">每日 / 每週 / 每月故障時數</span>
+      <code>DailyFaultHours = Σ 當天故障區間時數
+WeeklyFaultHours = Σ 本週 7 天 DailyFaultHours
+MonthlyFaultHours = Σ 本月各天 DailyFaultHours</code>
+      <span class="flabel">站點可用度</span>
+      <code>可用度 = (1 − 總故障時數 ÷ (槍數 × 期間總時數)) × 100%</code>
+    </div>
+  </section>
+
+  <section aria-labelledby="arch-h">
+    <div class="section-head">
+      <p class="eyebrow">05 · 系統架構</p>
+      <h2 id="arch-h">從兩支 API 到一份報表</h2>
+      <p>即時流與靜態流各走各的節奏，在彙總層才會合，這樣站點資料的每日同步不會拖慢即時故障偵測。</p>
+    </div>
+
+    <figure>
+      <div class="diagram-wrap">
+        <svg viewBox="0 0 1180 250" role="img" aria-label="資料管線圖：即時狀態API每1到2分鐘輪詢後經狀態變化偵測寫入事件記錄，站點資料API每日同步站點主檔，兩者於每日週月彙總層合併後產出監控儀表板與告警。">
+          <defs>
+            <marker id="arrow2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-muted)"></path>
+            </marker>
+          </defs>
+
+          <g class="pipe-node source">
+            <rect x="10" y="20" width="150" height="56" rx="10"></rect>
+            <text x="85" y="45" text-anchor="middle" font-size="12" font-weight="700">即時狀態 API</text>
+            <text x="85" y="63" text-anchor="middle" font-size="10" class="sub">ConnectorLiveStatus</text>
+          </g>
+          <g class="pipe-node">
+            <rect x="200" y="20" width="150" height="56" rx="10"></rect>
+            <text x="275" y="45" text-anchor="middle" font-size="12" font-weight="700">輪詢排程器</text>
+            <text x="275" y="63" text-anchor="middle" font-size="10" class="sub">Poller · 1–2 min</text>
+          </g>
+          <g class="pipe-node">
+            <rect x="390" y="20" width="150" height="56" rx="10"></rect>
+            <text x="465" y="45" text-anchor="middle" font-size="12" font-weight="700">狀態變化偵測</text>
+            <text x="465" y="63" text-anchor="middle" font-size="10" class="sub">Event Detector</text>
+          </g>
+          <g class="pipe-node store">
+            <rect x="580" y="20" width="150" height="56" rx="10"></rect>
+            <text x="655" y="45" text-anchor="middle" font-size="12" font-weight="700">事件記錄</text>
+            <text x="655" y="63" text-anchor="middle" font-size="10" class="sub">usage / fault logs</text>
+          </g>
+          <g class="pipe-node store">
+            <rect x="770" y="20" width="150" height="56" rx="10"></rect>
+            <text x="845" y="45" text-anchor="middle" font-size="12" font-weight="700">日／週／月彙總</text>
+            <text x="845" y="63" text-anchor="middle" font-size="10" class="sub">Aggregation</text>
+          </g>
+          <g class="pipe-node">
+            <rect x="960" y="20" width="150" height="56" rx="10"></rect>
+            <text x="1035" y="45" text-anchor="middle" font-size="12" font-weight="700">監控儀表板</text>
+            <text x="1035" y="63" text-anchor="middle" font-size="10" class="sub">Dashboard / Alerts</text>
+          </g>
+
+          <line class="edge" x1="160" y1="48" x2="196" y2="48" marker-end="url(#arrow2)"></line>
+          <line class="edge" x1="350" y1="48" x2="386" y2="48" marker-end="url(#arrow2)"></line>
+          <line class="edge" x1="540" y1="48" x2="576" y2="48" marker-end="url(#arrow2)"></line>
+          <line class="edge" x1="730" y1="48" x2="766" y2="48" marker-end="url(#arrow2)"></line>
+          <line class="edge" x1="920" y1="48" x2="956" y2="48" marker-end="url(#arrow2)"></line>
+
+          <text class="edge-label" x="655" y="14" text-anchor="middle" font-size="10">狀態轉換 → 寫入事件 → 日結 rollup → 指標 / 告警</text>
+
+          <g class="pipe-node source">
+            <rect x="200" y="160" width="150" height="56" rx="10"></rect>
+            <text x="275" y="185" text-anchor="middle" font-size="12" font-weight="700">站點資料 API</text>
+            <text x="275" y="203" text-anchor="middle" font-size="10" class="sub">Station · 每日同步</text>
+          </g>
+          <g class="pipe-node store">
+            <rect x="390" y="160" width="150" height="56" rx="10"></rect>
+            <text x="465" y="185" text-anchor="middle" font-size="12" font-weight="700">站點主檔</text>
+            <text x="465" y="203" text-anchor="middle" font-size="10" class="sub">Station Master</text>
+          </g>
+
+          <line class="edge" x1="350" y1="188" x2="386" y2="188" marker-end="url(#arrow2)"></line>
+          <path class="edge" d="M540,188 L845,188 L845,80" marker-end="url(#arrow2)"></path>
+          <rect class="edge-label-bg" x="620" y="196" width="140" height="16" rx="3"></rect>
+          <text class="edge-label" x="690" y="208" text-anchor="middle" font-size="10">JOIN StationID → 站點維度</text>
+        </svg>
+      </div>
+      <figcaption>圖 2 — 即時流（上）以分鐘級輪詢驅動事件與故障記錄；靜態流（下）每日同步後在彙總層與事件記錄以 StationID 合併，再輸出到儀表板。</figcaption>
+    </figure>
+  </section>
+
+  <section aria-labelledby="enh-h">
+    <div class="section-head">
+      <p class="eyebrow">06 · 延伸建議</p>
+      <h2 id="enh-h">在這份資料模型上，還可以多做六件事</h2>
+      <p>都是順著既有欄位長出來的功能，不需要額外資料源。</p>
+    </div>
+
+    <div class="enh-grid">
+      <div class="enh-card">
+        <span class="tag">效能</span>
+        <h3>動態輪詢頻率</h3>
+        <p>狀態 2（充電中）的槍每 1 分鐘輪詢，狀態 1（閒置）降到每 5 分鐘，兼顧即時性與 API 用量，也降低被限流的風險。</p>
+      </div>
+      <div class="enh-card">
+        <span class="tag">資料品質</span>
+        <h3>離線與故障分流</h3>
+        <p>LastUpdateTime 逾時應獨立標記為「離線」而非直接算作「故障」，兩者分開累計，才分得清是設備壞了還是網路斷了。</p>
+      </div>
+      <div class="enh-card">
+        <span class="tag">視覺化</span>
+        <h3>即時地圖儀表板</h3>
+        <p>用 PositionLat/Lon 標記站點，槍頭狀態即時上色，依 OperatorID 分群，維運人員一眼掌握全區狀態。</p>
+      </div>
+      <div class="enh-card">
+        <span class="tag">維運</span>
+        <h3>故障預警與智慧派工</h3>
+        <p>依 ConnectorID 統計 MTBF／MTTR，超過閾值自動透過站點 Telephone 通知 OperatorID，把巡檢從被動改成主動。</p>
+      </div>
+      <div class="enh-card">
+        <span class="tag">洞察分析</span>
+        <h3>尖峰時段熱力圖</h3>
+        <p>依小時 × 星期彙總狀態 2 出現頻率，找出各站尖峰時段，比對 Spaces / ChargingPoints 是否吃緊，作為擴充樁位的量化依據。</p>
+      </div>
+      <div class="enh-card">
+        <span class="tag">對外服務</span>
+        <h3>對外即時查詢小工具</h3>
+        <p>呼應 API 名稱裡的「Tourism」，把剩餘可用槍數包裝成可嵌入景點官網的小工具，讓遊客出發前先看到還有沒有空槍。</p>
+      </div>
+    </div>
+
+    <div class="bonus">
+      <span><b>再加兩個小延伸：</b></span>
+      <span>用 ChargedKWH × 解析後的 ChargingRate（如「計度/8元每度」）可以粗估每站每日營收；再依 OperatorID 定期輸出可用度報表，就是一份現成的加盟或補助稽核依據。</span>
+    </div>
+  </section>
+
+  <footer>
+    <span><b>假設與注意事項：</b></span>
+    <ul>
+      <li>ConnectorStatus 的 3 / 0 / 255 語意依常見 TDX EV 規格推斷，實作前建議對照官方最新文件確認。</li>
+      <li>30 分鐘心跳逾時為建議預設值，可依現場設備回報穩定度調整。</li>
+      <li>若要計算「合理可用度」，故障時數建議先用 ServiceTime 排除非營業時段再彙總。</li>
+    </ul>
+  </footer>
+
+</main>
