@@ -12,7 +12,6 @@
     --accent-soft: rgba(14, 156, 139, 0.12);
     --status-ok: #2F9E44;
     --status-active: #C9750A;
-    --status-reserved: #5B67CB;
     --status-fault: #D64545;
     --status-offline: #7A8A87;
     --mono: ui-monospace, "SF Mono", "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
@@ -32,7 +31,6 @@
       --accent-soft: rgba(47, 217, 190, 0.16);
       --status-ok: #57C767;
       --status-active: #F5A623;
-      --status-reserved: #8B95F0;
       --status-fault: #FF6B6B;
       --status-offline: #93A3A0;
     }
@@ -49,7 +47,6 @@
     --accent-soft: rgba(47, 217, 190, 0.16);
     --status-ok: #57C767;
     --status-active: #F5A623;
-    --status-reserved: #8B95F0;
     --status-fault: #FF6B6B;
     --status-offline: #93A3A0;
   }
@@ -197,6 +194,12 @@
 
   .table-title { font-family: var(--mono); font-size: 0.85rem; color: var(--ink-muted); margin-bottom: -0.6rem; }
 
+  .code-block { background: var(--surface-2); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.3rem; overflow-x: auto; }
+  .code-block pre { margin: 0; font-family: var(--mono); font-size: 0.82rem; line-height: 1.65; color: var(--ink); white-space: pre; }
+  .code-block .k { color: var(--accent-strong); }
+  .code-block .n { color: var(--ink-muted); }
+  .code-block .p { color: var(--ink-muted); }
+
   /* ---------- status legend ---------- */
   .legend { display: flex; flex-wrap: wrap; gap: 0.6rem; }
   .chip {
@@ -214,7 +217,6 @@
   .dot { width: 0.6rem; height: 0.6rem; border-radius: 50%; flex-shrink: 0; }
   .dot.ok { background: var(--status-ok); }
   .dot.active { background: var(--status-active); }
-  .dot.reserved { background: var(--status-reserved); }
   .dot.fault { background: var(--status-fault); }
   .dot.offline { background: var(--status-offline); }
 
@@ -393,8 +395,8 @@
           <tr><td class="field">StationID</td><td class="example">89132567-S0004</td><td class="meaning">所屬充電站編號，關聯站點資料的外鍵。</td></tr>
           <tr><td class="field">ChargingPointID</td><td class="example">89132567-P0007</td><td class="meaning">所屬充電樁（機柱）編號，一樁可能有多槍。</td></tr>
           <tr><td class="field">ConnectorID</td><td class="example">89132567-C0007</td><td class="meaning">充電槍唯一代碼，是追蹤使用與故障時數的最小單元。</td></tr>
-          <tr><td class="field">ConnectorType</td><td class="example">5</td><td class="meaning">槍頭規格碼（5 = CCS1 美規快充）。</td></tr>
-          <tr><td class="field">ConnectorStatus</td><td class="example">3</td><td class="meaning">狀態碼，見下方圖例；是所有使用率／故障率計算的觸發來源。</td></tr>
+          <tr><td class="field">ConnectorType</td><td class="example">5</td><td class="meaning">槍頭規格碼，對照下方代碼表；此例的 5 = J1772_Type1（美規交流）。</td></tr>
+          <tr><td class="field">ConnectorStatus</td><td class="example">3</td><td class="meaning">狀態碼，對照下方代碼表；是所有使用率／故障率計算的觸發來源。</td></tr>
           <tr><td class="field">ChargedKWH</td><td class="example">0</td><td class="meaning">當次充電累積度數（kWh），可用來估算營收。</td></tr>
           <tr><td class="field">ChargedPercent</td><td class="example">0</td><td class="meaning">當前車輛電池充電進度（%）。</td></tr>
           <tr><td class="field">LastUpdateTime</td><td class="example">2026-09-11T20:50:00+08:00</td><td class="meaning">設備端最後回報時間，用來判斷是否離線。</td></tr>
@@ -402,13 +404,43 @@
       </table>
     </div>
 
-    <div class="legend">
-      <span class="chip"><span class="dot ok"></span>1 Available 可用</span>
-      <span class="chip"><span class="dot active"></span>2 Occupied 充電中</span>
-      <span class="chip"><span class="dot reserved"></span>3 Reserved 預約／維護</span>
-      <span class="chip"><span class="dot fault"></span>4 Faulted 故障</span>
-      <span class="chip"><span class="dot offline"></span>0 / 255 Unknown 離線未知</span>
+    <p class="table-title">ConnectorType 充電槍規格代碼</p>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>代碼</th><th>規格</th><th>電流</th><th>備註</th></tr></thead>
+        <tbody>
+          <tr><td class="field">1</td><td class="meaning">CCS1</td><td class="example">DC 直流</td><td class="meaning">美規 Combo 1 快充</td></tr>
+          <tr><td class="field">2</td><td class="meaning">CCS2</td><td class="example">DC 直流</td><td class="meaning">歐規 Combo 2 快充（官方 schema 原文誤植為 CCCS2）</td></tr>
+          <tr><td class="field">3</td><td class="meaning">CHAdeMO</td><td class="example">DC 直流</td><td class="meaning">日規快充</td></tr>
+          <tr><td class="field">4</td><td class="meaning">Tesla_TPC</td><td class="example">DC 直流</td><td class="meaning">Tesla 專用接口</td></tr>
+          <tr><td class="field">5</td><td class="meaning">J1772_Type1</td><td class="example">AC 交流</td><td class="meaning">美規交流，本頁範例採用</td></tr>
+          <tr><td class="field">6</td><td class="meaning">Mennekes_Type2</td><td class="example">AC 交流</td><td class="meaning">歐規交流</td></tr>
+          <tr><td class="field">254</td><td class="meaning">Others</td><td class="example">—</td><td class="meaning">其他規格</td></tr>
+          <tr><td class="field">255</td><td class="meaning">Unknown</td><td class="example">—</td><td class="meaning">未知規格</td></tr>
+        </tbody>
+      </table>
     </div>
+    <p class="relation-note">可以跟 <b>Power</b> 欄位互相印證：1–4（CCS1、CCS2、CHAdeMO、Tesla_TPC）都是 DC 快充，5、6（J1772_Type1、Mennekes_Type2）都是 AC 交流——範例中 <code style="font-family:var(--mono)">Type: 5, Power: 1</code> 剛好對上「J1772 屬交流」，兩個欄位彼此一致。</p>
+
+    <p class="table-title">ConnectorStatus 狀態代碼</p>
+    <div class="legend">
+      <span class="chip"><span class="dot ok"></span>1 可使用・閒置</span>
+      <span class="chip"><span class="dot active"></span>2 不可使用・佔用或充電中</span>
+      <span class="chip"><span class="dot fault"></span>3 不可使用・異常故障</span>
+    </div>
+    <p class="relation-note">官方只定義這三個值，<b>沒有</b>「4 = 故障」，也沒有「0 / 255 離線」的正式代碼——這點跟本頁前一版的假設不同，已依官方 OpenAPI schema 校正。「離線」不是正式狀態碼，而是靠 LastUpdateTime 太久沒更新推斷出來的，圖 1 的 Offline 節點就是指這個自訂判定。</p>
+
+    <p class="table-title">原始回應範例 · ConnectorLiveStatus</p>
+    <div class="code-block"><pre><span class="p">{</span>
+  <span class="k">"StationID"</span><span class="p">:</span> "89132567-S0004"<span class="p">,</span>
+  <span class="k">"ChargingPointID"</span><span class="p">:</span> "89132567-P0007"<span class="p">,</span>
+  <span class="k">"ConnectorID"</span><span class="p">:</span> "89132567-C0007"<span class="p">,</span>
+  <span class="k">"ConnectorType"</span><span class="p">:</span> <span class="n">5</span><span class="p">,</span>
+  <span class="k">"ConnectorStatus"</span><span class="p">:</span> <span class="n">3</span><span class="p">,</span>
+  <span class="k">"ChargedKWH"</span><span class="p">:</span> <span class="n">0</span><span class="p">,</span>
+  <span class="k">"ChargedPercent"</span><span class="p">:</span> <span class="n">0</span><span class="p">,</span>
+  <span class="k">"LastUpdateTime"</span><span class="p">:</span> "2026-09-11T20:50:00+08:00"
+<span class="p">}</span></pre></div>
 
     <p class="table-title">Station（站點基本資料）</p>
     <div class="table-wrap">
@@ -422,12 +454,50 @@
           <tr><td class="field">PositionLat / Lon</td><td class="example">23.259 / 120.109</td><td class="meaning">經緯度，用於地圖標記。</td></tr>
           <tr><td class="field">Spaces</td><td class="example">2</td><td class="meaning">充電專用停車位總數。</td></tr>
           <tr><td class="field">ChargingPoints</td><td class="example">2</td><td class="meaning">站內充電樁總座數。</td></tr>
-          <tr><td class="field">Connectors</td><td class="example">Type 5 ×2</td><td class="meaning">站內槍頭規格與數量統計，換算「總槍數」的依據。</td></tr>
+          <tr><td class="field">Connectors</td><td class="example">Type 5 ×2</td><td class="meaning">站內槍頭規格與數量統計（Type 對照上方 ConnectorType 代碼表），換算「總槍數」的依據。</td></tr>
           <tr><td class="field">ServiceTime</td><td class="example">7*24小時</td><td class="meaning">營業時間，用來判斷故障時數是否需排除非營業時段。</td></tr>
           <tr><td class="field">ParkingRate / ChargingRate</td><td class="example">免費 / 8元每度</td><td class="meaning">計費規則，結合 ChargedKWH 可估算營收。</td></tr>
         </tbody>
       </table>
     </div>
+
+    <p class="table-title">原始回應範例 · Station</p>
+    <div class="code-block"><pre><span class="p">{</span>
+  <span class="k">"StationID"</span><span class="p">:</span> "89132567-S0002"<span class="p">,</span>
+  <span class="k">"StationName"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"Zh_tw"</span><span class="p">:</span> "Acon-eco台南井仔腳鹽田站"<span class="p">,</span>
+    <span class="k">"En"</span><span class="p">:</span> "AconElectricEnergyStation"
+  <span class="p">},</span>
+  <span class="k">"Description"</span><span class="p">:</span> "井仔腳停車場"<span class="p">,</span>
+  <span class="k">"OperatorID"</span><span class="p">:</span> "89132567"<span class="p">,</span>
+  <span class="k">"OperationType"</span><span class="p">:</span> <span class="n">2</span><span class="p">,</span>
+  <span class="k">"PositionLat"</span><span class="p">:</span> <span class="n">23.25938</span><span class="p">,</span>
+  <span class="k">"PositionLon"</span><span class="p">:</span> <span class="n">120.10868</span><span class="p">,</span>
+  <span class="k">"Geometry"</span><span class="p">:</span> "POLYGON ((120.108 23.259, 120.109 23.259, 120.109 23.259, 120.108 23.259, 120.108 23.259))"<span class="p">,</span>
+  <span class="k">"Spaces"</span><span class="p">:</span> <span class="n">2</span><span class="p">,</span>
+  <span class="k">"ChargingPoints"</span><span class="p">:</span> <span class="n">2</span><span class="p">,</span>
+  <span class="k">"Connectors"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="k">"Type"</span><span class="p">:</span> <span class="n">5</span><span class="p">,</span>
+      <span class="k">"Power"</span><span class="p">:</span> <span class="n">1</span><span class="p">,</span>
+      <span class="k">"Quantity"</span><span class="p">:</span> <span class="n">2</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="k">"ServiceTime"</span><span class="p">:</span> "7*24小時"<span class="p">,</span>
+  <span class="k">"ParkingRate"</span><span class="p">:</span> "免費"<span class="p">,</span>
+  <span class="k">"ChargingRate"</span><span class="p">:</span> "計度/8元每度"<span class="p">,</span>
+  <span class="k">"Floors"</span><span class="p">:</span> "1"<span class="p">,</span>
+  <span class="k">"UsageRestriction"</span><span class="p">:</span> "依現場操作說明告示"<span class="p">,</span>
+  <span class="k">"PhotoURLs"</span><span class="p">:</span> <span class="p">[</span>
+    "https://ev-acon.lifeplus.tw/image/tainanyenten.jpg"
+  <span class="p">],</span>
+  <span class="k">"Location"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"Place"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="k">"POI"</span><span class="p">:</span> "井仔腳停車場"
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="k">"Telephone"</span><span class="p">:</span> "0800-868885"
+<span class="p">}</span></pre></div>
   </section>
 
   <section aria-labelledby="cap1-h">
@@ -445,7 +515,7 @@
 
     <figure>
       <div class="diagram-wrap">
-        <svg viewBox="0 0 730 300" role="img" aria-label="充電槍狀態轉換圖：可用與充電中互相轉換，任一狀態偵測到狀態碼4即進入故障，故障排除後回到可用；若逾時 30 分鐘未回報則標記為離線。">
+        <svg viewBox="0 0 730 300" role="img" aria-label="充電槍狀態轉換圖：可用與充電中互相轉換，任一狀態偵測到狀態碼3即進入故障，故障排除後回到可用；若逾時 30 分鐘未回報則標記為離線，此為自訂判定而非官方狀態碼。">
           <defs>
             <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
               <path d="M0,0 L10,5 L0,10 z" fill="var(--ink-muted)"></path>
@@ -466,12 +536,12 @@
           <g class="node fault">
             <rect x="305" y="190" width="150" height="60" rx="12"></rect>
             <text x="380" y="215" text-anchor="middle" font-size="13" font-weight="700">Faulted</text>
-            <text x="380" y="233" text-anchor="middle" font-size="11" class="sub">狀態 4 · 故障</text>
+            <text x="380" y="233" text-anchor="middle" font-size="11" class="sub">狀態 3 · 故障</text>
           </g>
           <g class="node offline">
             <rect x="520" y="190" width="170" height="60" rx="12"></rect>
             <text x="605" y="215" text-anchor="middle" font-size="13" font-weight="700">Offline</text>
-            <text x="605" y="233" text-anchor="middle" font-size="11" class="sub">心跳逾時 · 離線未知</text>
+            <text x="605" y="233" text-anchor="middle" font-size="11" class="sub">心跳逾時 · 自訂判定</text>
           </g>
 
           <!-- A <-> B -->
@@ -487,7 +557,7 @@
           <line class="edge dashed" x1="70" y1="90" x2="336" y2="188" marker-end="url(#arrow)"></line>
           <line class="edge dashed" x1="590" y1="90" x2="424" y2="188" marker-end="url(#arrow)"></line>
           <rect class="edge-label-bg" x="300" y="158" width="160" height="16" rx="3"></rect>
-          <text class="edge-label" x="380" y="170" text-anchor="middle" font-size="11">③④ 狀態 → 4 判故障</text>
+          <text class="edge-label" x="380" y="170" text-anchor="middle" font-size="11">③④ 狀態 → 3 判故障</text>
 
           <!-- Faulted -> A -->
           <path class="edge dashed" d="M305,222 C 220,222 150,150 112,92" marker-end="url(#arrow)"></path>
@@ -501,7 +571,7 @@
           <text class="edge-label" x="605" y="162" text-anchor="middle" font-size="11">⑥⑦ 逾時 &gt;30 分未回報</text>
         </svg>
       </div>
-      <figcaption>圖 1 — 單一充電槍的狀態轉換：實線為正常充電循環，虛線為故障進出，點線為心跳逾時判定的離線分流。</figcaption>
+      <figcaption>圖 1 — 單一充電槍的狀態轉換：實線為正常充電循環，虛線為故障進出（狀態 1/2/3 為官方代碼），點線為心跳逾時判定的離線分流（Offline 為自訂邏輯，非官方狀態碼）。</figcaption>
     </figure>
 
     <div class="formula-block">
@@ -526,7 +596,7 @@
       <table>
         <thead><tr><th>觸發條件</th><th>判定依據</th><th>記錄類型</th></tr></thead>
         <tbody>
-          <tr><td class="meaning">明確故障</td><td class="example">ConnectorStatus 變為 4</td><td class="meaning">TriggerType = fault</td></tr>
+          <tr><td class="meaning">明確故障</td><td class="example">ConnectorStatus 變為 3</td><td class="meaning">TriggerType = fault</td></tr>
           <tr><td class="meaning">設備離線</td><td class="example">LastUpdateTime 超過 30 分鐘未更新</td><td class="meaning">TriggerType = timeout</td></tr>
         </tbody>
       </table>
@@ -540,7 +610,7 @@
           <tr><td class="field">ConnectorID / StationID</td><td class="meaning">定位是哪一槍、哪一站發生。</td></tr>
           <tr><td class="field">FaultStartTime / FaultEndTime</td><td class="meaning">故障區間起訖；跨天需依 00:00–24:00 切分後再彙總。</td></tr>
           <tr><td class="field">DurationMinutes</td><td class="meaning">單次故障持續分鐘數，日結時加總。</td></tr>
-          <tr><td class="field">TriggerType</td><td class="meaning">fault（狀態碼4）或 timeout（心跳逾時），分開統計。</td></tr>
+          <tr><td class="field">TriggerType</td><td class="meaning">fault（狀態碼3）或 timeout（心跳逾時），分開統計。</td></tr>
         </tbody>
       </table>
     </div>
@@ -678,10 +748,11 @@ MonthlyFaultHours = Σ 本月各天 DailyFaultHours</code>
   </section>
 
   <footer>
+    <span><b>資料來源：</b><a href="https://tdx.transportdata.tw/api-service/swagger/basic/b378d320-04a9-4fba-80b8-0df1b96dd5e8" target="_blank" rel="noopener">TDX 電動車充換電站 OpenAPI Swagger 文件</a></span>
     <span><b>假設與注意事項：</b></span>
     <ul>
-      <li>ConnectorStatus 的 3 / 0 / 255 語意依常見 TDX EV 規格推斷，實作前建議對照官方最新文件確認。</li>
-      <li>30 分鐘心跳逾時為建議預設值，可依現場設備回報穩定度調整。</li>
+      <li>ConnectorType、ConnectorStatus 代碼表已對照上述官方 OpenAPI schema（components.schemas.LiveStatus / Connector）校正，但 API 仍可能隨版本更新，正式串接前建議重新核對一次。</li>
+      <li>30 分鐘心跳逾時為建議預設值，可依現場設備回報穩定度調整；「離線」全程是自訂邏輯，不是官方狀態碼。</li>
       <li>若要計算「合理可用度」，故障時數建議先用 ServiceTime 排除非營業時段再彙總。</li>
     </ul>
   </footer>
